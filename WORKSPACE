@@ -1,8 +1,6 @@
 new_http_archive(
-    name = "gtest",
-    url = "https://github.com/google/googletest/archive/release-1.7.0.zip",
-    sha256 = "b58cb7547a28b2c718d1e38aee18a3659c9e3ff52440297e965f5edffe34b6d0",
-    build_file = "gtest.BUILD",
-    strip_prefix = "googletest-release-1.7.0",
+    name = "stlviewerArchive",
+    url = "https://github.com/jcfr/bazel-large-files-with-girder/releases/download/stlviewer/stlviewer-linux-amd64.tar.gz",
+    sha256 = "cf7f3a683c9fdf874dd7975b38fe4ac9a85a768e90f10d8bab51f10336353848",
+    build_file_content = "exports_files(['stlviewer'])"
 )
-
