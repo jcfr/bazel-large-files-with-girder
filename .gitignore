@@ -1,1 +1,12 @@
 bazel*
+
+data/*.obj
+data/*.stl
+
+thirdparty/VTK
+thirdparty/VTK-build
+thirdparty/objviewer
+thirdparty/objviewer-build
+thirdparty/stlviewer
+thirdparty/stlviewer-build
+thirdparty/*.tar.gz

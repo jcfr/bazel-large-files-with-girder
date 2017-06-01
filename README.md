@@ -30,7 +30,17 @@ This is the server where the large file are stored.
 
 1. Setting up Girder server
 
-  * After installing Girder, enable the [Hashsum download](http://girder.readthedocs.io/en/latest/plugins.html#hashsum-download) plugin.
+  * After installing Girder, enable
+  
+    * the [Hashsum download](http://girder.readthedocs.io/en/latest/plugins.html#hashsum-download) plugin.
+  
+  * also install and enable this plugin to support ``filepath`` based versioning:
+  
+    * [data_revisions](https://github.com/girder/data_revisions)
+  
+  * optionally, to allow visualizing obj file, enable this plugin:
+  
+    * [vtk_viewer](https://github.com/girder/vtk_viewer)
 
   * create a Collection with a data folder.
 
@@ -40,7 +50,7 @@ This is the server where the large file are stored.
     least `read_data` and `write_data` scopes.
 
   * `<folder_id>` used below can be retrieved by browsing to the created folder and
-    copying it from the URL. (e.g `590b3cb1739ba64dfc32089e`)
+    copying it from the URL. (e.g `59307411739ba619e0eaa82e`)
 
   * test data used in this demo are licensed under the
     [Creative Commons - Attribution - Share Alike](https://creativecommons.org/licenses/by-sa/3.0/)
@@ -49,17 +59,39 @@ This is the server where the large file are stored.
   ```
   # Download test data
   cd /tmp
-  curl -L --progress-bar -o small_dragon.stl -O https://github.com/jcfr/bazel-large-files-with-girder/releases/download/test-data/small_dragon.stl
-  curl -L --progress-bar -o large_dragon.stl -O https://github.com/jcfr/bazel-large-files-with-girder/releases/download/test-data/large_dragon.stl
+  curl -L --progress-bar -o small_dragon.obj -O https://github.com/jcfr/bazel-large-files-with-girder/releases/download/test-data/small_dragon.obj
+  curl -L --progress-bar -o large_dragon.obj -O https://github.com/jcfr/bazel-large-files-with-girder/releases/download/test-data/large_dragon.obj
 
   # Install Girder client
   mkvirtualenv test_data_upload
   pip install girder-client
 
-  # Upload files into data folder
-  girder-cli --api-key <API_KEY> --scheme https --host girder.example.org upload <folder_id> small_dragon.stl
-  girder-cli --api-key <API_KEY> --scheme https --host girder.example.org upload <folder_id> large_dragon.stl
+  # Checkout project including upload client  
+  git clone git://github.com/jcfr/bazel-large-files-with-girder.git
+  cd bazel-large-files-with-girder
+
+  # Set Girder server information
+  export GIRDER_API_KEY=<API_KEY>
+  export GIRDER_SERVER=https://girder.example.org
+  export GIRDER_FOLDER_ID=59307411739ba619e0eaa82e
+
+  # Upload file into data folder
+  mv /tmp/small_dragon.obj ./data/dragon.obj
+  ./thirdparty/girder_data_revision_upload.py ./data/dragon.obj
+
+  mv /tmp/large_dragon.obj ./data/dragon.obj
+  ./thirdparty/girder_data_revision_upload.py ./data/dragon.obj
   ```
+
+  * by using ``thirdparty/girder_data_revision_upload.py`` script, each item
+    is associated with additional metadata:
+
+     * keys ``versionedFilePath`` and ``versionedFileRevision`` allowing to
+       retrieve file revision based on a canonical path (e.g ``data/dragon.obj``)
+
+     * key ``vtkView`` set to ``surface`` allowing to have uploaded ``*.obj`` files
+       rendered in 3D viewer powered by [vtk_viewer](https://github.com/girder/vtk_viewer) Girder
+       plugin (which internally use [vtk.js](https://kitware.github.io/vtk-js/)). 
 
 ##### Download and prepare demo project
 
@@ -90,7 +122,7 @@ the `read_data` scope.
    
 ##### Scenario 1: Checkout default branch referencing a small data file
 
-Run test (default branch reference a small STL file of ~8MB)
+Run test (default branch ```v2-step1-small_dragon``` reference a small OBJ file of ~8MB)
 
 ```
 bazel run test:inspect_dragon
@@ -112,10 +144,10 @@ download of girder data is expected to work in a sandboxed environment. It only
 ##### Scenario 2: Checkout revision with an updated data file reference
 
   
-Run test associated with branch `step2-large_dragon` referencing a large STL file (~200MB).
+Run test associated with branch `v2-step2-large_dragon` referencing a large OBJ file (~35MB).
 
   ```
-  git checkout -b step2-small_dragon origin/step2-small_dragon
+  git checkout -b v2-step2-small_dragon origin/v2-step2-small_dragon
 
   bazel run test:inspect_dragon
   ```
@@ -133,7 +165,7 @@ This source tree is a simple Bazel project organized like this:
  
 ```
 <root>
-  |-- WORKSPACE ... : Download stlviewer used in inspect model tests
+  |-- WORKSPACE ... : Download objviewer used in inspect model tests
   |-- data ........ : Key files referencing large data
   |-- test ........ : Tests depending on large data files
   |-- tools  ...... : Girder client script to download large files
@@ -143,8 +175,8 @@ Note that the inspect model tests are not *legitimate* tests, they simply allow
 to interactively visualize which model has been fetched and made available in
 the bazel workspace.
 
-The STL model visualization is done by running a simple Linux executable statically
-built against VTK. More details [here](thirdparty/stlviewer/README.md).
+The OBJ model visualization is done by running a simple Linux executable statically
+built against VTK. More details [here](thirdparty/objviewer/README.md).
 
 
 ### Integration with Bazel
@@ -161,12 +193,12 @@ that will take care of downloading the file from Girder when executing the test.
 sh_test(
     name = "inspect_dragon",
     srcs = ["inspect_model.sh"],
-    args = ["$(location //data:dragon.stl)"],
-    data = ["@stlviewerArchive//:stlviewer", "//data:dragon.stl"],
+    args = ["$(location //data:dragon.obj)"],
+    data = ["@objviewerArchive//:objviewer", "//data:dragon.obj"],
 )
 ```
 
-Note also that the `@stlviewerArchive//:stlviewer` target takes care of
+Note also that the `@objviewerArchive//:objviewer` target takes care of
 downloading the viewer used in the *test*.
 
 ### Specifying Girder server and credentials
@@ -221,6 +253,19 @@ https://${server}/api/v1/file/hashsum/sha512/${hashsum}/download
 ```
 
 where `${hashsum}` corresponds to a 128-character string.
+
+
+#### How revision associated with a path can be retrieved ?
+
+Installation of the  [data_revisions](https://github.com/girder/data_revisions) plugin
+adds a new ``item/revisions`` endpoint allowing to retrieve all items matching a
+given ``path``:
+
+```
+https://${server}/api/v1#!/item/item_getRevisionsByPath
+```
+
+For example, see http://ec2-184-72-193-101.compute-1.amazonaws.com/api/v1#!/item/item_getRevisionsByPath
 
 
 #### What are the advantages over Git-LFS ? 

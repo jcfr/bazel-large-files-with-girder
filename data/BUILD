@@ -6,7 +6,7 @@
 #
 
 #exports_files([
-#  "very_small_dragon.stl"
+#  "very_small_dragon.obj"
 #])
 
 
@@ -18,13 +18,11 @@
 #
 
 genrule(
-  name="download_dragon_stl",
-  srcs=["dragon.stl.sha512"],
-  outs=["dragon.stl"],
-  cmd="$(location //tools:download_data) $(location dragon.stl.sha512) $@",
+  name="download_dragon_obj",
+  srcs=["dragon.obj.sha512"],
+  outs=["dragon.obj"],
+  cmd="$(location //tools:download_data) $(location dragon.obj.sha512) $@",
   tools=["//tools:download_data"],
   visibility=["//visibility:public"],
 )
 
-
-  # cmd="(python --version; girder_external_data; date; cat $(location dragon.stl.sha512)) > $@",
