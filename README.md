@@ -241,3 +241,12 @@ Since in our case, we are interested in:
 
 Instead, directly integrating with the build system allows to leverage its
 dependency resolution mechanism to selectively download files.
+
+### License
+
+It is covered by the 3-Clause BSD License:
+
+https://opensource.org/licenses/BSD-3-Clause
+
+The license file was added at on 2017-10-24, but you may consider that the license applies
+to all prior revisions as well.
